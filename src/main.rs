@@ -18,7 +18,16 @@ fn aws_lambda_log_group_names() -> Vec<LogGroupName> {
         let response = client.describe_log_groups(&request).unwrap();
         let a: Vec<LogGroup> = response.log_groups.unwrap();
         for i in a {
-            map.insert(i.log_group_name.unwrap(), i.stored_bytes.unwrap());
+            let request = DescribeLogStreamsRequest {
+                log_group_name: i.log_group_name.clone().unwrap(),
+                descending: Some(true),
+                limit: Some(1),
+                order_by: Some("LastEventTime".into()),
+                ..Default::default()
+            };
+            let response = client.describe_log_streams(&request).unwrap();
+            let alpha = response.log_streams.unwrap().into_iter().next();
+            map.insert(i.log_group_name.unwrap(), alpha);
         }
 
         if response.next_token.is_some() {
