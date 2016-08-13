@@ -4,6 +4,8 @@ use rusoto::logs::{CloudWatchLogsClient, DescribeLogGroupsRequest};
 use rusoto::{DefaultCredentialsProvider, Region};
 use rusoto::logs::{LogGroupName, DescribeLogStreamsRequest, LogGroup, GetLogEventsRequest};
 use std::collections::HashMap;
+use std::thread::sleep;
+use std::time::Duration;
 
 fn aws_lambda_log_group_names() -> Vec<LogGroupName> {
     let mut log_groups: Vec<LogGroupName> = vec![];
@@ -18,8 +20,9 @@ fn aws_lambda_log_group_names() -> Vec<LogGroupName> {
         let response = client.describe_log_groups(&request).unwrap();
         let a: Vec<LogGroup> = response.log_groups.unwrap();
         for i in a {
+            let log_group_name = i.log_group_name.unwrap();
             let request = DescribeLogStreamsRequest {
-                log_group_name: i.log_group_name.clone().unwrap(),
+                log_group_name: log_group_name.clone(),
                 descending: Some(true),
                 limit: Some(1),
                 order_by: Some("LastEventTime".into()),
@@ -27,7 +30,11 @@ fn aws_lambda_log_group_names() -> Vec<LogGroupName> {
             };
             let response = client.describe_log_streams(&request).unwrap();
             let alpha = response.log_streams.unwrap().into_iter().next();
-            map.insert(i.log_group_name.unwrap(), alpha);
+            map.insert(log_group_name.clone(), alpha);
+
+            // Slow down requests
+            // https://github.com/rusoto/rusoto/issues/234
+            sleep(Duration::from_millis(100));
         }
 
         if response.next_token.is_some() {
