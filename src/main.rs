@@ -2,12 +2,12 @@ extern crate rusoto;
 
 use rusoto::logs::{CloudWatchLogsClient, DescribeLogGroupsRequest};
 use rusoto::{DefaultCredentialsProvider, Region};
-use rusoto::logs::{LogGroupName, DescribeLogStreamsRequest, LogGroup, GetLogEventsRequest};
+use rusoto::logs::{LogGroupName, DescribeLogStreamsRequest, LogGroup, GetLogEventsRequest, LogStream};
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::Duration;
 
-fn aws_lambda_log_group_names() -> Vec<LogGroupName> {
+fn aws_lambda_log_group_map() -> HashMap<String, Option<LogStream>> {
     let mut log_groups: Vec<LogGroupName> = vec![];
 
     let credentials = DefaultCredentialsProvider::new().unwrap();
@@ -44,22 +44,7 @@ fn aws_lambda_log_group_names() -> Vec<LogGroupName> {
         }
     }
 
-    /*
-    for log_group_name in &log_groups {
-        let request = DescribeLogStreamsRequest {
-            log_group_name: log_group_name.clone(),
-            ..Default::default()
-        };
-
-        let response = client.describe_log_streams(&request).unwrap();
-
-        for i in response.log_streams.unwrap() {
-            println!("{}", i.log_stream_name.unwrap());
-        }
-    }
-    */
-    
-    log_groups
+    map
 }
 
 fn main() {
