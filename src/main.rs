@@ -23,9 +23,8 @@ impl LogGroupWatcher {
 
         loop {
             let response = client.describe_log_groups(&request).unwrap();
-            let a: Vec<LogGroup> = response.log_groups.unwrap();
-            for i in a {
-                let log_group_name = i.log_group_name.unwrap();
+            for log_group in response.log_groups.unwrap() {
+                let log_group_name = log_group.log_group_name.unwrap();
                 let request = DescribeLogStreamsRequest {
                     log_group_name: log_group_name.clone(),
                     descending: Some(true),
