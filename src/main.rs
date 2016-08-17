@@ -2,10 +2,11 @@ extern crate rusoto;
 
 use rusoto::logs::{CloudWatchLogsClient, DescribeLogGroupsRequest};
 use rusoto::{DefaultCredentialsProvider, Region};
-use rusoto::logs::{LogGroupName, DescribeLogStreamsRequest, LogGroup, GetLogEventsRequest, LogStream};
+use rusoto::logs::{DescribeLogStreamsRequest, LogStream};
 use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::Duration;
+use std::thread;
 
 struct LogGroupWatcher {
     map: HashMap<String, Option<LogStream>>,
@@ -13,13 +14,15 @@ struct LogGroupWatcher {
 
 impl LogGroupWatcher {
     fn new() -> LogGroupWatcher {
-        let mut log_groups: Vec<LogGroupName> = vec![];
+        LogGroupWatcher {
+            map: HashMap::new(),
+        }
+    }
 
+    fn start_watching(&mut self) {
         let credentials = DefaultCredentialsProvider::new().unwrap();
         let client = CloudWatchLogsClient::new(credentials, Region::UsEast1);
         let mut request = DescribeLogGroupsRequest::default();
-
-        let mut map = HashMap::new();
 
         loop {
             let response = client.describe_log_groups(&request).unwrap();
@@ -34,7 +37,7 @@ impl LogGroupWatcher {
                 };
                 let response = client.describe_log_streams(&request).unwrap();
                 let alpha = response.log_streams.unwrap().into_iter().next();
-                map.insert(log_group_name.clone(), alpha);
+                self.map.insert(log_group_name.clone(), alpha);
 
                 // Slow down requests
                 // https://github.com/rusoto/rusoto/issues/234
@@ -48,12 +51,17 @@ impl LogGroupWatcher {
             }
         }
 
-        LogGroupWatcher {
-            map: map,
-        }
+        thread::spawn(|| {
+            loop {
+                sleep(Duration::from_secs(1));
+                println!("from thread");
+            }
+        });
     }
 }
 
 fn main() {
-    let log_group_watcher = LogGroupWatcher::new();
+    let mut log_group_watcher = LogGroupWatcher::new();
+    log_group_watcher.start_watching();
+    sleep(Duration::from_secs(100));
 }
